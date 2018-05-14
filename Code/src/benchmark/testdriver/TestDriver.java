@@ -738,11 +738,11 @@ public class TestDriver {
 		int i = 0;
 		while (i < args.length) {
 			try {
-				if (args[i].equals("-runs")) {
+				if (args[i].equals("-runs") || args[i].equals("-r")) {
 					nrRuns = Integer.parseInt(args[i++ + 1]);
 				} else if (args[i].equals("-idir")) {
 					resourceDir = args[i++ + 1];
-				} else if (args[i].equals("-w")) {
+				} else if (args[i].equals("-warm") || args[i].equals("-w")) {
 					warmups = Integer.parseInt(args[i++ + 1]);
 				} else if (args[i].equals("-o")) {
 					xmlResultFile = args[i++ + 1];

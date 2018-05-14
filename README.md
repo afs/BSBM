@@ -6,6 +6,7 @@ Changes:
 * Additional presentation of results (simple plain tables).
 * Tidy code, create clean POM build.
 * Reorganise scripts into separate areas.
+* Record queries made 
 
 The orginal code for comparision is in `bsbmtools-0.2` (a subset of the
 v0.2 distribution).
@@ -46,7 +47,14 @@ http://wifo5-03.informatik.uni-mannheim.de/bizer/berlinsparqlbenchmark/datasets/
 
 ### Run the benchmark
 
-The `/Run` area 
+The `/Run` area has a "run" script.
+
+There is a new argument, "-gen", that instead of running the benchmark,
+writes the queries out into the file `run-details.json`. This can be
+used to see exeactly what the benchamr would execute and eaily extract
+any interesting queries.
+
+Argument "-r" has been added as a synonym for "-runs".
 
 ### Processes for TDB backed stores.
 
