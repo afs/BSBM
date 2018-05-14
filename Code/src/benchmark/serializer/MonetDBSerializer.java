@@ -38,6 +38,7 @@ public class MonetDBSerializer implements Serializer {
 		initTables();
 	}
 	
+	@Override
 	public void gatherData(ObjectBundle bundle) {
 		Iterator<BSBMResource> it = bundle.iterator();
 	
@@ -576,7 +577,8 @@ public class MonetDBSerializer implements Serializer {
 		tables.reviewDump.append(values);
 	}
 	
-	public void serialize() {
+	@Override
+    public void serialize() {
 		//Finish files and close
 		try {
 			tables.productTypeDump.append(tables.endTable(tables.productTypeInsertCounter, "producttype"));
@@ -625,7 +627,8 @@ public class MonetDBSerializer implements Serializer {
 		}
 	}
 
-	public Long triplesGenerated() {
+	@Override
+    public Long triplesGenerated() {
 		return nrTriples;
 	}
 

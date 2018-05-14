@@ -38,6 +38,7 @@ public class NTriples implements Serializer {
 		nrTriples = 0l;
 	}
 	
+	@Override
 	public void gatherData(ObjectBundle bundle) {
 		Iterator<BSBMResource> it = bundle.iterator();
 
@@ -691,7 +692,8 @@ public class NTriples implements Serializer {
 	
 	
 
-	public void serialize() {
+	@Override
+    public void serialize() {
 		//Close Files
 		try {
 			for(int i=0;i<fileWriter.length;i++) {
@@ -713,7 +715,8 @@ public class NTriples implements Serializer {
 		}
 	}
 
-	public Long triplesGenerated() {
+	@Override
+    public Long triplesGenerated() {
 		return nrTriples;
 	}
 }

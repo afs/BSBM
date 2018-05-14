@@ -17,58 +17,46 @@
 
 package benchmark.testdriver;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.ObjectOutputStream;
+import java.io.* ;
+import java.nio.file.Files;
+import java.util.* ;
 
-import java.util.Iterator;
-import java.util.Locale;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.LinkedList;
-
-import org.apache.log4j.xml.DOMConfigurator;
-import org.apache.log4j.Logger;
-import org.apache.log4j.Level;
-
-import java.io.*;
-import java.util.StringTokenizer;
-
-import benchmark.qualification.QueryResult;
+import benchmark.qualification.QueryResult ;
+import org.apache.jena.Jena;
+import org.apache.jena.atlas.io.IO;
+import org.apache.jena.atlas.json.JSON;
+import org.apache.jena.atlas.json.JsonArray;
+import org.apache.jena.atlas.json.JsonBuilder;
+import org.apache.jena.atlas.json.JsonObject;
+import org.apache.jena.atlas.lib.DateTimeUtils;
+import org.apache.jena.atlas.lib.FileOps ;
+import org.apache.jena.system.JenaSystem;
+import org.apache.log4j.Level ;
+import org.apache.log4j.Logger ;
+import org.apache.log4j.PropertyConfigurator ;
+import org.apache.log4j.xml.DOMConfigurator ;
 
 public class TestDriver {
 	protected QueryMix queryMix;// The Benchmark Querymix
-	protected int warmups = TestDriverDefaultValues.warmups;// how many Query
-															// mixes are run for
-															// warm up
-	protected AbstractParameterPool parameterPool;// Where to get the query
-													// parameters from
-	protected ServerConnection server;// only important for single threaded runs
-	protected File usecaseFile = TestDriverDefaultValues.usecaseFile;// where to
-																		// take
-																		// the
-																		// queries
-																		// from
+    // how many Query mixes are run for warm up
+	protected int warmups = TestDriverDefaultValues.warmups;
+
+	// Where to get the query parameters from
+	protected AbstractParameterPool parameterPool;
+    // only important for single threaded runs
+	protected ServerConnection server;
+	// where to take the queries from
+	protected File usecaseFile = TestDriverDefaultValues.usecaseFile;
 	protected int nrRuns = TestDriverDefaultValues.nrRuns;
-	protected long seed = TestDriverDefaultValues.seed;// For the random number
-														// generators
+
+	// For the random number generators
+	protected long seed = TestDriverDefaultValues.seed;
 	protected String sparqlEndpoint = null;
 	protected String sparqlUpdateEndpoint = null;
 	protected static String sparqlUpdateQueryParameter = TestDriverDefaultValues.updateQueryParameter;
 	protected String defaultGraph = TestDriverDefaultValues.defaultGraph;
-	protected String resourceDir = TestDriverDefaultValues.resourceDir;// Where
-																		// to
-																		// take
-																		// the
-																		// Test
-																		// Driver
-																		// data
-																		// from
+    // Where to take the Test Driver data from
+	protected String resourceDir = TestDriverDefaultValues.resourceDir;
 	protected String xmlResultFile = TestDriverDefaultValues.xmlResultFile;
 	protected static Logger logger = Logger.getLogger(TestDriver.class);
 	protected String updateFile = null;
@@ -80,28 +68,18 @@ public class TestDriver {
 	protected String driverClassName = TestDriverDefaultValues.driverClassName;
 	protected boolean qualification = TestDriverDefaultValues.qualification;
 	protected String qualificationFile = TestDriverDefaultValues.qualificationFile;
+	// Generate queries, do not run them.
+	protected boolean generate = false;
 
 	/*
 	 * Parameters for steady state
 	 */
-	protected int qmsPerPeriod = TestDriverDefaultValues.qmsPerPeriod;// Querymixes
-																		// per
-																		// measuring
-																		// period
-	protected double percentDifference = TestDriverDefaultValues.percentDifference;// Difference
-																					// in
-																					// percent
-																					// between
-																					// min
-																					// and
-																					// max
-																					// measurement
-																					// period
-	protected int nrOfPeriods = TestDriverDefaultValues.nrOfPeriods;// The last
-																	// nrOfPeriods
-																	// periods
-																	// are
-																	// compared
+	// Querymixes per measuring period
+	protected int qmsPerPeriod = TestDriverDefaultValues.qmsPerPeriod;
+	// Difference in percent between min and max measurement period
+	protected double percentDifference = TestDriverDefaultValues.percentDifference;
+	// The last nrOfPeriods periods are compared
+	protected int nrOfPeriods = TestDriverDefaultValues.nrOfPeriods;
 	protected boolean rampup = false;
 
 	public TestDriver(String[] args) {
@@ -119,14 +97,21 @@ public class TestDriver {
 						resourceDir), seed, new File(updateFile));
 		}
 		System.out.println("done");
-
+		
 		if (sparqlEndpoint != null && !multithreading) {
-			if (doSQL)
-				server = new SQLConnection(sparqlEndpoint, timeout,
-						driverClassName);
-			else
-				server = new SPARQLConnection(sparqlEndpoint,
-						sparqlUpdateEndpoint, defaultGraph, timeout);
+		    if (doSQL)
+		        server = new SQLConnection(sparqlEndpoint, timeout,
+		                                   driverClassName);
+		    else {
+		        if ( sparqlEndpoint.startsWith("jena:") )
+		            server = new LocalConnectionJena(sparqlEndpoint, sparqlUpdateEndpoint, defaultGraph, timeout);
+		        else if ( sparqlEndpoint.startsWith("sesame:") )
+		            //server = new LocalConnectionSesame(sparqlEndpoint, defaultGraph, timeout);
+		            throw new UnsupportedOperationException("sesame: URLs not supported") ;
+		        else
+		            server = new SPARQLConnection(sparqlEndpoint,
+		                                          sparqlUpdateEndpoint, defaultGraph, timeout);
+		    }
 		} else if (multithreading) {
 			// do nothing
 		} else {
@@ -144,9 +129,7 @@ public class TestDriver {
 	private List<String> getUseCaseQuerymixes() {
 		List<String> files = new ArrayList<String>();
 
-		try {
-			BufferedReader reader = new BufferedReader(new FileReader(
-					usecaseFile));
+		try ( BufferedReader reader = new BufferedReader(new FileReader( usecaseFile)) ) {
 			String line = null;
 			while ((line = reader.readLine()) != null) {
 				String[] querymixInfo = line.split("=");
@@ -159,7 +142,6 @@ public class TestDriver {
 				if (querymixInfo[0].toLowerCase().equals("querymix"))
 					files.add(querymixInfo[1]);
 			}
-
 		} catch (IOException e) {
 			System.err.println(e.getMessage());
 			System.exit(-1);
@@ -231,21 +213,16 @@ public class TestDriver {
 				if (queryRun[i] != null) {
 					Integer qnr = queryRun[i];
 					if (queries[qnr - 1] == null) {
-						File queryFile = new File(queryDir, "query" + qnr
-								+ ".txt");
-						File queryDescFile = new File(queryDir, "query" + qnr
-								+ "desc.txt");
+						File queryFile = new File(queryDir, "query"+qnr+".txt");
+						File queryDescFile = new File(queryDir, "query"+qnr+"desc.txt");
 						if (doSQL)
-							queries[qnr - 1] = new Query(queryFile,
-									queryDescFile, "@");
+							queries[qnr - 1] = new Query(queryFile, qnr, queryDescFile, "@");
 						else
-							queries[qnr - 1] = new Query(queryFile,
-									queryDescFile, "%");
+							queries[qnr - 1] = new Query(queryFile, qnr, queryDescFile, "%");
 
 						// Read qualification information
 						if (qualification) {
-							File queryValidFile = new File(queryDir, "query"
-									+ qnr + "valid.txt");
+							File queryValidFile = new File(queryDir, "query"+qnr+"valid.txt");
 							String[] rowNames = getRowNames(queryValidFile);
 							queries[qnr - 1].setRowNames(rowNames);
 						}
@@ -379,23 +356,11 @@ public class TestDriver {
 		ArrayList<String> rowNames = new ArrayList<String>();
 
 		try {
-			BufferedReader rowReader = new BufferedReader(
-					new InputStreamReader(new FileInputStream(file)));
-
-			StringBuffer data = new StringBuffer();
-			String line = null;
-			while ((line = rowReader.readLine()) != null) {
-				if (!line.equals("")) {
-					data.append(line);
-					data.append(" ");
-				}
-			}
-
-			StringTokenizer st = new StringTokenizer(data.toString());
+		    String data = L.readWholeFile(file);
+			StringTokenizer st = new StringTokenizer(data);
 			while (st.hasMoreTokens()) {
 				rowNames.add(st.nextToken());
 			}
-			rowReader.close();
 		} catch (IOException e) {
 			System.err
 					.println("Error processing query qualification-info file: "
@@ -410,23 +375,11 @@ public class TestDriver {
 		ArrayList<Integer> qm = new ArrayList<Integer>();
 
 		try {
-			BufferedReader qmReader = new BufferedReader(new InputStreamReader(
-					new FileInputStream(file)));
-
-			StringBuffer data = new StringBuffer();
-			String line = null;
-			while ((line = qmReader.readLine()) != null) {
-				if (!line.equals("")) {
-					data.append(line);
-					data.append(" ");
-				}
-			}
-
-			StringTokenizer st = new StringTokenizer(data.toString());
+		    String data = L.readWholeFile(file);
+			StringTokenizer st = new StringTokenizer(data);
 			while (st.hasMoreTokens()) {
 				qm.add(Integer.parseInt(st.nextToken()));
 			}
-			qmReader.close();
 		} catch (IOException e) {
 			System.err.println("Error processing query mix file: " + file);
 			System.exit(-1);
@@ -442,25 +395,13 @@ public class TestDriver {
 			ignoreQueries[i] = false;
 
 		try {
-			BufferedReader qmReader = new BufferedReader(new InputStreamReader(
-					new FileInputStream(file)));
-
-			StringBuffer data = new StringBuffer();
-			String line = null;
-			while ((line = qmReader.readLine()) != null) {
-				if (!line.equals("")) {
-					data.append(line);
-					data.append(" ");
-				}
-			}
-
-			StringTokenizer st = new StringTokenizer(data.toString());
+		    String data = L.readWholeFile(file);
+			StringTokenizer st = new StringTokenizer(data);
 			while (st.hasMoreTokens()) {
 				Integer queryNr = Integer.parseInt(st.nextToken());
 				if (queryNr > 0 && queryNr <= maxQueryNumber)
 					ignoreQueries[queryNr - 1] = true;
 			}
-			qmReader.close();
 		} catch (IOException e) {
 			System.err.println("Error processing query ignore file: " + file);
 			System.exit(-1);
@@ -475,34 +416,85 @@ public class TestDriver {
 		double periodRuntime = 0;
 		BufferedWriter measurementFile = null;
 		try {
-			measurementFile = new BufferedWriter(new FileWriter(
-					"steadystate.tsv"));
+			measurementFile = new BufferedWriter(new FileWriter("steadystate.tsv"));
 		} catch (IOException e) {
 			System.err.println("Could not create file steadystate.tsv!");
 			System.exit(-1);
 		}
 
+		JsonObject outer = new JsonObject();
+		
+		// Parameter choices.
+		
+		outer.put("generated", DateTimeUtils.nowAsString());
+		String dataset = resourceDir.replaceFirst("[^-]*", "BSBM");
+		outer.put("data_name", dataset);
+		outer.put("warmups", warmups);
+		outer.put("runs", nrRuns);
+
+		JsonArray array = new JsonArray();
+		int queryNumber = 0 ;
+		
 		for (int nrRun = -warmups; nrRun < nrRuns; nrRun++) {
 			long startTime = System.currentTimeMillis();
 			queryMix.setRun(nrRun);
+			int queryInRun = 0 ;
 			while (queryMix.hasNext()) {
 				Query next = queryMix.getNext();
-
 				// Don't run update queries on warm-up
 				if (nrRun < 0 && next.getQueryType() == Query.UPDATE_TYPE) {
 					queryMix.setCurrent(0, -1.0);
 					continue;
 				}
 
-				Object[] queryParameters = parameterPool
-						.getParametersForQuery(next);
+				Object[] queryParameters = parameterPool.getParametersForQuery(next);
 				next.setParameters(queryParameters);
+				
 				if (ignoreQueries[next.getNr() - 1])
 					queryMix.setCurrent(0, -1.0);
 				else {
-					server.executeQuery(next, next.getQueryType());
+	                queryInRun++;
+	                queryNumber++;
+				    // INFO
+				    //String phase = (nrRun>=0)?"run":"warmup";
+				    QueryDetails details = next.details();
+				    long queryInRun$ = queryInRun;
+                    long queryNumber$ = queryNumber;
+                    // Negative, warmup; no zero.
+                    long nrRun$ = nrRun>=0 ? nrRun+1 : nrRun;
+				    
+				    JsonObject obj = JsonBuilder.buildObject((b)->{
+                        b.pair("query_number", queryNumber$)
+                         .pair("run_loop", nrRun$)
+                         .pair("query_in_loop", queryInRun$)
+				         .pair("group", next.getQueryGroup())
+                         //.pair("phase", phase)
+				         .pair("query", next.getQueryString());
+
+                        b.pair("template", details.queryTemplate);
+				        b.key("params");
+				        b.startArray();
+				        for ( Param param : details.params) {
+				            b.startObject();
+				            b.pair("name", param.name);
+				            b.pair("value", param.value);
+				            b.finishObject();
+				        }
+				        b.finishArray();
+				    });
+				    array.add(obj);
+                    // INFO
+				    
+				    if ( generate ) {
+				        //System.out.println(nrRun+":"+queryInRun+" :: q="+details.queryNumber);
+				        //System.out.println("Generate: "+nrRun+":"+queryInRun);
+				        queryMix.setCurrent(0, -1.0);
+				    }
+				    else
+				        server.executeQuery(next, next.getQueryType());
 				}
 			}
+			
 
 			// Ignore warm-up measures
 			if (nrRun >= 0) {
@@ -525,20 +517,32 @@ public class TestDriver {
 				qmsCounter = 0;
 			}
 
-			System.out.println(nrRun
-					+ ": "
-					+ String.format(Locale.US, "%.2f", queryMix
-							.getQueryMixRuntime() * 1000) + "ms, total: "
-					+ (System.currentTimeMillis() - startTime) + "ms");
+			if ( generate ) {
+			    System.out.println("Generate: run="+nrRun);
+			} else {
+    			System.out.println(nrRun
+    					+ ": "
+    					+ String.format(Locale.ROOT, "%.2f", queryMix
+    							.getQueryMixRuntime() * 1000) + "ms, total: "
+    					+ (System.currentTimeMillis() - startTime) + "ms");
+			}
 			queryMix.finishRun();
 		}
-		logger.log(Level.ALL, printResults(true));
+		// Output details.
+        outer.put("data", array);
+        try ( OutputStream outStream = new FileOutputStream("run-details.json")) {
+            JSON.write(outStream, outer);
+        } catch (IOException e1) { IO.exception(e1); }
 
-		try {
-			FileWriter resultWriter = new FileWriter(xmlResultFile);
+        if ( generate )
+            logger.log(Level.ALL, "Generate: w="+warmups+",r="+nrRuns);
+        else
+            logger.log(Level.ALL, printResults(true));
+        
+
+		try (FileWriter resultWriter = new FileWriter(xmlResultFile)) {
 			resultWriter.append(printXMLResults(true));
 			resultWriter.flush();
-			resultWriter.close();
 			measurementFile.close();
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -547,49 +551,50 @@ public class TestDriver {
 
 	public void runQualification() {
 		File file = new File(qualificationFile);
-		System.out.println("Creating qualification file: "
-				+ file.getAbsolutePath() + "\n");
-		try {
-			file.createNewFile();
-
-			ObjectOutputStream objectOutput = new ObjectOutputStream(
-					new FileOutputStream(file, false));
-			objectOutput.writeInt(queryMix.getQueries().length);
-			objectOutput.writeLong(seed);
-			objectOutput.writeInt(parameterPool.getScalefactor());
-			objectOutput.writeInt(nrRuns);
-			objectOutput.writeObject(queryMix.getQueryMix());
-			objectOutput.writeObject(ignoreQueries);
-
-			for (int nrRun = 0; nrRun < nrRuns; nrRun++) {
-				queryMix.setRun(nrRun + 1);
-				System.out.print("Run: " + (nrRun + 1));
-				while (queryMix.hasNext()) {
-					Query next = queryMix.getNext();
-					Object[] queryParameters = parameterPool
-							.getParametersForQuery(next);
-					next.setParameters(queryParameters);
-					if (ignoreQueries[next.getNr() - 1])
-						queryMix.setCurrent(0, -1.0);
-					else {
-						QueryResult queryResult = server.executeValidation(
-								next, next.getQueryType());
-						if (queryResult != null)
-							objectOutput.writeObject(queryResult);
-						queryMix.setCurrent(0, -1.0);
-					}
-					System.out.print(".");
-				}
-				queryMix.finishRun();
-				System.out.println("done");
-			}
-			objectOutput.flush();
-			objectOutput.close();
-			System.out.println("\nQualification file created!");
-		} catch (IOException e) {
-			e.printStackTrace();
-			System.exit(-1);
+		System.out.println("Creating qualification file: " + file.getAbsolutePath() + "\n");
+		
+		if ( Files.exists(file.toPath()) ) {
+		    System.err.println("\nQualification file alreadty exists! "+file);
+		    System.exit(1);
 		}
+
+		try(ObjectOutputStream objectOutput = new ObjectOutputStream(new FileOutputStream(file, false)) ) {
+		    objectOutput.writeInt(queryMix.getQueries().length);
+		    objectOutput.writeLong(seed);
+		    objectOutput.writeInt(parameterPool.getScalefactor());
+		    objectOutput.writeInt(nrRuns);
+		    objectOutput.writeObject(queryMix.getQueryMix());
+		    objectOutput.writeObject(ignoreQueries);
+
+		    for (int nrRun = 0; nrRun < nrRuns; nrRun++) {
+		        queryMix.setRun(nrRun + 1);
+		        System.out.print("Run: " + (nrRun + 1));
+		        while (queryMix.hasNext()) {
+		            Query next = queryMix.getNext();
+		            Object[] queryParameters = parameterPool
+		                .getParametersForQuery(next);
+		            next.setParameters(queryParameters);
+		            if (ignoreQueries[next.getNr() - 1])
+		                queryMix.setCurrent(0, -1.0);
+		            else {
+		                QueryResult queryResult = server.executeValidation(
+		                    next, next.getQueryType());
+		                if (queryResult != null)
+		                    objectOutput.writeObject(queryResult);
+		                queryMix.setCurrent(0, -1.0);
+		            }
+		            System.out.print(".");
+		        }
+		        queryMix.finishRun();
+		        System.out.println("done");
+		    }
+		    objectOutput.flush();
+		} catch (IOException e) {
+		    e.printStackTrace();
+		    System.exit(-1);
+		}
+		System.out.println("\nQualification file created!");
+
 	}
 
 	/*
@@ -717,13 +722,12 @@ public class TestDriver {
 		manager.startWarmup();
 		manager.startRun();
 		logger.log(Level.ALL, printResults(true));
-		try {
-			FileWriter resultWriter = new FileWriter(xmlResultFile);
-			resultWriter.append(printXMLResults(true));
-			resultWriter.flush();
-			resultWriter.close();
+		try ( FileWriter resultWriter = new FileWriter(xmlResultFile) ) {
+		    resultWriter.append(printXMLResults(true));
+		    resultWriter.flush();
+		    resultWriter.close();
 		} catch (IOException e) {
-			e.printStackTrace();
+		    e.printStackTrace();
 		}
 	}
 
@@ -776,6 +780,8 @@ public class TestDriver {
 					usecaseFile = new File(args[i++ + 1]);
 				} else if (args[i].equals("-uqp")) {
 					sparqlUpdateQueryParameter = args[i++ + 1];
+				} else if ( args[i].equals("-gen") ) {
+				    generate = true;
 				} else if (!args[i].startsWith("-")) {
 					sparqlEndpoint = args[i];
 				} else {
@@ -1120,21 +1126,32 @@ public class TestDriver {
 		}
 	}
 
-	public static void main(String argv[]) {
-		DOMConfigurator.configureAndWatch("log4j.xml", 60 * 1000);
+	public static void main(String ...argv) {
+        JenaSystem.init();
+        System.out.println("TDB = "+Jena.VERSION);
+
+	    if ( FileOps.exists("log4j.properties") )
+	        PropertyConfigurator.configureAndWatch("log4j.properties", 60*1000);
+	    else
+	        DOMConfigurator.configureAndWatch("log4j.xml", 60 * 1000);
 		TestDriver testDriver = new TestDriver(argv);
 		testDriver.init();
 		System.out.println("\nStarting test...\n");
+		boolean printableResults = false ; 
 		if (testDriver.multithreading) {
 			testDriver.runMT();
-			System.out.println("\n" + testDriver.printResults(true));
+			printableResults = true ;
 		} else if (testDriver.qualification)
 			testDriver.runQualification();
 		else if (testDriver.rampup)
 			testDriver.runRampup();
 		else {
 			testDriver.run();
-			System.out.println("\n" + testDriver.printResults(true));
+			printableResults = true ;
 		}
+
+		if ( false && printableResults )
+		    System.out.println("\n" + testDriver.printResults(true));
+		
 	}
 }

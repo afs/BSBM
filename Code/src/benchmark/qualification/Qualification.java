@@ -86,7 +86,8 @@ public class Qualification {
 		}
 	}
 	
-	private void test() {
+	@SuppressWarnings("resource")
+    private void test() {
 		try{
 			FileWriter resultWriter = new FileWriter(qualificationLog);
 			System.out.println("Starting validation...\n");

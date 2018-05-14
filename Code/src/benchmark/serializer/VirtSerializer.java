@@ -36,6 +36,7 @@ public class VirtSerializer implements Serializer {
 		initTables();
 	}
 	
+	@Override
 	public void gatherData(ObjectBundle bundle) {
 		Iterator<BSBMResource> it = bundle.iterator();
 	
@@ -574,7 +575,8 @@ public class VirtSerializer implements Serializer {
 		tables.reviewDump.append(values);
 	}
 	
-	public void serialize() {
+	@Override
+    public void serialize() {
 		//Finish files and close
 		try {
 			tables.productTypeDump.flush();
@@ -613,7 +615,8 @@ public class VirtSerializer implements Serializer {
 		}
 	}
 
-	public Long triplesGenerated() {
+	@Override
+    public Long triplesGenerated() {
 		return nrTriples;
 	}
 

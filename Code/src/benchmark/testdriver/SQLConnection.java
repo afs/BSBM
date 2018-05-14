@@ -38,6 +38,7 @@ public class SQLConnection implements ServerConnection {
 	/*
 	 * Execute Query with Query Object
 	 */
+	@Override
 	public void executeQuery(Query query, byte queryType) {
 		executeQuery(query.getQueryString(), queryType, query.getNr(), query.getQueryMix());
 	}
@@ -46,53 +47,50 @@ public class SQLConnection implements ServerConnection {
 	 * execute Query with Query String
 	 */
 	private void executeQuery(String queryString, byte queryType, int queryNr, QueryMix queryMix) {
-		double timeInSeconds;
-		
-		try {
-			long start = System.nanoTime();
-			ResultSet results = statement.executeQuery(queryString);
-	
-			int resultCount = 0;
-			while(results.next())
-				resultCount++;
-			
-			Long stop = System.nanoTime();
-			Long interval = stop-start;
-			
-			timeInSeconds = interval.doubleValue()/1000000000;
+	    long start = System.nanoTime();
+	    try(ResultSet results = statement.executeQuery(queryString)) {
 
-			int queryMixRun = queryMix.getRun() + 1;
-			
-			if(logger.isEnabledFor( Level.ALL ) && queryType!=3 && queryMixRun > 0)
-				logResultInfo(queryNr, queryMixRun, timeInSeconds,
-		                   queryString, queryType, 0,
-		                   resultCount);
+	        int resultCount = 0;
+	        while(results.next())
+	            resultCount++;
 
-			queryMix.setCurrent(resultCount, timeInSeconds);
-			results.close();
-		} catch(SQLException e) {
-			while(e!=null) {
-				e.printStackTrace();
-				e=e.getNextException();
-			}
-			System.err.println("\n\nError for Query " + queryNr + ":\n\n" + queryString);
-			System.exit(-1);
-		}
+	        Long stop = System.nanoTime();
+	        Long interval = stop-start;
+
+	        double timeInSeconds = interval.doubleValue()/1000000000;
+
+	        int queryMixRun = queryMix.getRun() + 1;
+
+	        if(logger.isEnabledFor( Level.ALL ) && queryType!=3 && queryMixRun > 0)
+	            logResultInfo(queryNr, queryMixRun, timeInSeconds,
+	                queryString, queryType, 0,
+	                resultCount);
+
+	        queryMix.setCurrent(resultCount, timeInSeconds);
+
+	    } catch(SQLException e) {
+	        while(e!=null) {
+	            e.printStackTrace();
+	            e=e.getNextException();
+	        }
+	        System.err.println("\n\nError for Query " + queryNr + ":\n\n" + queryString);
+	        System.exit(-1);
+	    }
 	}
 	
 	/*
 	 * Execute Query with precompiled Query
 	 * @see benchmark.testdriver.ServerConnection#executeQuery(benchmark.testdriver.CompiledQuery, benchmark.testdriver.CompiledQueryMix)
 	 */
-	public void executeQuery(CompiledQuery query, CompiledQueryMix queryMix) {
+	@Override
+    public void executeQuery(CompiledQuery query, CompiledQueryMix queryMix) {
 		double timeInSeconds;
 		String queryString = query.getQueryString();
 		byte queryType = query.getQueryType();
 		int queryNr = query.getNr();
 		
-		try {
-			long start = System.nanoTime();
-			ResultSet results = statement.executeQuery(queryString);
+		long start = System.nanoTime();
+		try(ResultSet results = statement.executeQuery(queryString)) {
 	
 			int resultCount = 0;
 			while(results.next())
@@ -111,7 +109,6 @@ public class SQLConnection implements ServerConnection {
 		                   resultCount);
 
 			queryMix.setCurrent(resultCount, timeInSeconds);
-			results.close();
 		} catch(SQLException e) {
 			while(e!=null) {
 				e.printStackTrace();
@@ -144,7 +141,8 @@ public class SQLConnection implements ServerConnection {
 		logger.log(Level.ALL, sb.toString());
 	}
 	
-	public void close() {
+	@Override
+    public void close() {
 		try {
 		conn.close();
 		} catch(SQLException e) {
@@ -153,7 +151,8 @@ public class SQLConnection implements ServerConnection {
 		}
 	}
 
-	public QueryResult executeValidation(Query query, byte queryType) {
+	@Override
+    public QueryResult executeValidation(Query query, byte queryType) {
 		// TODO Auto-generated method stub
 		return null;
 	}

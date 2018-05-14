@@ -114,6 +114,7 @@ public class Turtle implements Serializer {
 		}
 	}
 	
+	@Override
 	public void gatherData(ObjectBundle bundle) {
 		if(haveToGeneratePrefixes) {
 			generatePrefixes();
@@ -750,7 +751,8 @@ public class Turtle implements Serializer {
 	
 	
 
-	public void serialize() {
+	@Override
+    public void serialize() {
 		//Close files
 		try {
 			for(int i=0;i<dataFileWriter.length;i++) {
@@ -763,7 +765,8 @@ public class Turtle implements Serializer {
 		}
 	}
 
-	public Long triplesGenerated() {
+	@Override
+    public Long triplesGenerated() {
 		return nrTriples;
 	}
 	
