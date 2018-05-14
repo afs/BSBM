@@ -1,0 +1,67 @@
+#!/bin/bash
+
+DATADIR="Data"
+if [ ! -e "$DATADIR" ]
+then
+    echo "**** Data directory does not exist: $DATADIR"
+    exit 1 
+fi
+
+LOADER=tdbloader
+## Location of databases.
+JENADB="$DATADIR/DB"
+
+function loaddb {
+    local SIZE="$1"
+    local SET="$DATADIR/data-$SIZE"
+    local DATA=''
+    
+    if [ -e "$SET/data.nt" ]
+    then
+	DATA="$SET/data.nt"
+    elif [ -e "$SET/data.nt.gz" ]
+    then
+	DATA="$SET/data.nt.gz"
+    else
+	echo "No data for $SET"
+	return
+    fi
+
+    STORE="$SET/Store"
+    DB="$STORE/DB-$SIZE"
+    if [ -e "$DB" ]
+    then
+	echo "** already exists : $DB"
+    fi
+    mkdir -p "$DB"
+    
+    echo "== Load from $DATA"
+    $LOADER --loc "$DB" "$DATA"
+    echo "== Stats ($SIZE)"
+    tdbstats --loc "$DB" > stats.opt
+    mv stats.opt "$DB"
+
+    DBLOC="$( cd $DB ; pwd )"
+    
+    echo "== Assembler ($SIZE)"
+    sed -e "s!LOCATION!$DBLOC!" < assembler-template.ttl > "$STORE/assembler.ttl"
+}
+
+## Clear all
+##rm -rf Data/data-*/Store
+
+loaddb  50k
+loaddb  250k
+## loaddb  1m
+## 
+loaddb  5m
+loaddb  25m
+loaddb  50m
+
+## loaddb  100m
+## loaddb  200m
+
+## loaddb  300m
+## loaddb  350m
+## loaddb  400m
+## loaddb  500m

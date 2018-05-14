@@ -1,0 +1,14 @@
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+
+@prefix ja:     <http://jena.hpl.hp.com/2005/11/Assembler#> .
+@prefix sdb:    <http://jena.hpl.hp.com/2007/sdb#> .
+@prefix tdb:    <http://jena.hpl.hp.com/2008/tdb#> .
+
+#[] ja:loadClass "org.apache.jena.engine.Quack" .
+
+## ---- A whole dataset managed by TDB
+<#dataset> rdf:type      tdb:DatasetTDB ;
+    tdb:location "LOCATION" ;
+    .

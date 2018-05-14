@@ -1,0 +1,23 @@
+# source me
+
+BSBM="$HOME/Projects/BSBM"
+CODE="$BSBM/Code"
+VER=0.0.0-SNAPSHOT
+BIN="$BSBM/bin"
+
+## Direct to download
+BSBM0="$HOME/Datasets/BSBM/BSBM_Code/bsbmtools-0.2"
+CP0="$BSBM0/lib/*"
+
+CPF="$BIN/bsbm.classpath"
+if [ ! -e "$CPF" ]; then
+    echo "Need to create classpath file"
+    echo 'cp "bsbm.cp" "bsbm.classpath"'
+    echo
+    echo "Ensure maven is upto date with the latest snapshots and then run"
+    echo -e "( cd $CODE ; \n  mvn dependency:build-classpath -Dmdep.outputFile=$CPF )"
+    echo " and add ':$CODE/target/classes'"
+    exit 1
+fi
+
+CP="$(cat $CPF)"

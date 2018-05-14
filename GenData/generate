@@ -1,0 +1,87 @@
+#!/bin/bash
+
+BSBM="$HOME/Projects/BSBM"
+BIN="$BSBM/bin"
+source "$BIN/bsbm_init"
+
+## --------
+
+DATADIR="Data"
+if [ ! -e "$DATADIR" ]
+then
+    echo "**** Data directory does not exist: $DATADIR"
+    exit 1 
+fi
+
+## --------
+# Check for givennames.txt  titlewords.txt
+if [ ! -e "givennames.txt" ]
+then
+    echo "titlewords.txt not found in current directory" 2>&1
+    exit 1
+fi
+if [ ! -e "givennames.txt" ]
+then
+    echo "givennames.txt not found in current directory" 2>&1
+    exit 1
+fi
+
+## --------
+
+# To get the same sets as the benchmark:
+## 50k:  128
+## 250k: 666
+## 5m:   14088
+## 1M:     -fc -pc 2785
+## 25M:    -fc -pc 70812
+## 100M:   -fc -pc 284826
+## 200M:   -fc -pc 570000
+
+## Guesses.
+## 300M:   -fc -pc 856000
+## 400M:   -fc -pc 1141300
+## 500M:   -fc -pc 1427000
+
+
+
+function generateData {
+    local size="$1"
+    local pc="$2"
+    #$BSBM/generate "$1" "$2"
+
+    local DIR="$DATADIR/data-$size"
+
+    echo "// $DIR" 
+
+    if [ -e "$DIR" ]
+    then
+	echo "**** Already exists: $DIR/data"
+	return
+    fi
+
+    [ -d "$DIR" ] || { mkdir "$DIR" ; }
+
+    echo "==== Generate data for $size"
+    ## Generate N-triples.
+    java -cp "$CP0" -server benchmark.generator.Generator \
+         -fc -pc $pc -dir $DIR -fn "$DIR/data"
+    echo "---- gzip: $size"
+    gzip "$DIR/data.nt"
+    echo "--- Done: $size"
+}
+
+## generateData 50k   128
+## generateData 250k  666
+## generateData 1m    2785
+
+## generateData 5m    14092
+## generateData 25m   70812
+## generateData 50m   142075
+
+## generateData 100m  284826
+## generateData 200m  570000
+
+## generateData 300m  856000
+## generateData 350m  1000000
+## generateData 400m  1141300
+## generateData 500m  1427000
