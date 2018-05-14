@@ -60,13 +60,12 @@ Argument "-r" has been added as a synonym for "-runs".
 
 In the  `/Run` area, the script "results" generates
 
-    results Results/res-??.xml Results/res-??.xml 
+    results Results/res-??.xml ...
 
-where `??` are size names.
+where `??` are any size names. e.g. `res-1m.xml`. An HTML file is written to stdout.
 
-An HTML is written to stdout.
-
-The original results generator can be run with "results_bm".
+The original results generator can be run with "results_bm" and it
+writes generated HTML files in `HTML/`.
 
 ### Processes for TDB backed stores.
 
