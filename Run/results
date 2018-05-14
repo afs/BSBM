@@ -1,0 +1,24 @@
+#!/bin/bash
+
+#!/bin/bash
+
+BSBM="$HOME/Projects/BSBM"
+source "$BSBM/bin/bsbm_init"
+
+# echo "$CP"
+## --------
+
+PROGRAM=benchmark.tools.ResultTransformAlt
+
+ARGS="$@"
+
+if [[ $# -eq 0 || $1 = "-h" || $1 = "--help" || $1 = "-help" ]]
+then
+    (
+	echo "Usage: $(basename $0) [--label=] RESULTSFILE [ ...]"
+	echo "  Output is written to stdout"
+    ) 1>&2
+    exit
+fi
+
+java -cp "$CP" $JVM_ARGS -Dlog4j.configuration=file:log4j.properties $PROGRAM "$@"

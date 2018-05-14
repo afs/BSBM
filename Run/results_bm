@@ -1,0 +1,24 @@
+#!/bin/bash
+
+#!/bin/bash
+
+BSBM="$HOME/Projects/BSBM"
+source "$BSBM/bin/bsbm_init"
+
+# echo "$CP"
+## --------
+
+PROGRAM=benchmark.tools.ResultTransform
+
+mkdir -p HTML
+
+if [[ $# -eq 0 || $1 = "-h" || $1 = "--help" || $1 = "-help" ]]
+then
+    (
+	echo "Usage: $(basename $0) DIR [DIR ...]"
+	echo "  Output is written to files in directory HTML"
+    ) 1>&2
+    exit
+fi
+
+java -cp "$CP" $JVM_ARGS -Dlog4j.configuration=file:log4j.properties $PROGRAM "$@"

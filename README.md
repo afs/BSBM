@@ -56,6 +56,18 @@ any interesting queries.
 
 Argument "-r" has been added as a synonym for "-runs".
 
+### Geneate HTML results.
+
+In the  `/Run` area, the script "results" generates
+
+    results Results/res-??.xml Results/res-??.xml 
+
+where `??` are size names.
+
+An HTML is written to stdout.
+
+The original results generator can be run with "results_bm".
+
 ### Processes for TDB backed stores.
 
 Choose sizes wanted - edit this script.

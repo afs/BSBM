@@ -3,7 +3,7 @@
 BSBM="$HOME/Projects/BSBM"
 source "$BSBM/bin/bsbm_init"
 
-#cecho "$CP"
+# echo "$CP"
 ## --------
 
 DATADIR="Data"
@@ -18,7 +18,6 @@ fi
 
 PROGRAM=benchmark.testdriver.TestDriver
 
-DATADIR=Data
 ARGS="$@"
 
 function ping {
@@ -50,9 +49,7 @@ function runOne {
     fi
     echo "==== Performance run for $SIZE"
     echo "== Start: $(date +"%Y-%m-%d %H:%M:%S")"
-    java -cp "$CP" $JVM_ARGS \
-	 -Dlog4j.configuration=file:log4j.properties \
-	 $PROGRAM \
+    java -cp "$CP" $JVM_ARGS -Dlog4j.configuration=file:log4j.properties $PROGRAM \
 	 $ARGS -idir "$SET" -o "Results/res-$SIZE.xml" \
          "jena:$STORE/assembler.ttl"
 	 #"http://localhost:3030/ds/sparql"

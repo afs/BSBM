@@ -11,7 +11,8 @@ import java.util.*;
 
 public class ResultTransform {
     static StringBuffer sb;
-    static boolean AllResultFiles = false ;
+    static boolean AllResultFiles = true ;
+    static String HTML_DIR = "HTML";
     static FileWriter query_size_of_stores;
 
     static FileWriter store_size_of_queries;
@@ -288,15 +289,15 @@ public class ResultTransform {
     //Init Output Files
     private static void init() {
         try {
-            query_size_of_stores = new FileWriter("bsbm_query_and_size_tables_of_stores.html"); //** 
+            query_size_of_stores = new FileWriter(HTML_DIR+"/bsbm_query_and_size_tables_of_stores.html"); //** 
             if ( AllResultFiles ) {
-                store_size_of_queries = new FileWriter("bsbm_store_and_size_tables_of_queries.html");
-                size_store_of_queries = new FileWriter("bsbm_size_and_store_tables_of_queries.html");
-                store_query_of_size = new FileWriter("bsbm_store_and_query_tables_of_sizes.html");
-                overview = new FileWriter("overview.html");
+                store_size_of_queries = new FileWriter(HTML_DIR+"/bsbm_store_and_size_tables_of_queries.html");
+                size_store_of_queries = new FileWriter(HTML_DIR+"/bsbm_size_and_store_tables_of_queries.html");
+                store_query_of_size = new FileWriter(HTML_DIR+"/bsbm_store_and_query_tables_of_sizes.html");
+                overview = new FileWriter(HTML_DIR+"/overview.html");
             }
         } catch(IOException e) {
-            System.err.println("Could not open Input directories!");
+            System.err.println("Could not open Output directories!");
             System.exit(-1);
         }
     }
